@@ -22,5 +22,11 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -e ".[dev]"
-      - name: Run tests
-        run: pytest -q
+      # The floor is deliberately well below the current figure. CI installs only
+      # [dev], so every model-backed component is skipped here and reports near-zero
+      # coverage -- PerplexityDetector alone accounts for 26 of the uncovered lines.
+      # Each further model-backed component drags the total down by a few points for
+      # a legitimate reason, so a tight floor would reject correct work. This is a
+      # regression guard, not a target: raise it only if it stops catching anything.
+      - name: Run tests with coverage
+        run: pytest -q --cov=humanizer_bench --cov-report=term-missing --cov-fail-under=75

@@ -34,6 +34,12 @@ Each of the four parts has a base class with a single required method:
 | Attack   | `BaseAttack`   | `transform(text) -> str`            | `tests/test_attacks.py`   |
 | Dataset  | `BaseDataset`  | `__iter__() -> Iterator[Example]`   | `tests/test_datasets.py`  |
 
+CI reports line coverage and fails below 75%. The figure on `main` is higher than that;
+the floor is loose on purpose, because CI installs only `[dev]` and therefore skips every
+model-backed component, which shows up as uncovered lines through no fault of yours. Treat
+a drop as a prompt to check whether an ordinary, non-model code path lost its test — not as
+a number to game.
+
 Please:
 
 - Add a docstring to every public class and function.
