@@ -71,6 +71,45 @@ def test_callable_alias():
     assert attack(text) == SentenceMergeAttack(rate=1.0).transform(text)
 
 
-def test_back_translation_stub_raises():
-    with pytest.raises(NotImplementedError):
-        BackTranslationAttack().transform("anything")
+# --- BackTranslationAttack -----------------------------------------------------
+
+def test_back_translation_registers_without_models():
+    # Constructing must stay cheap: no heavy imports until transform() runs.
+    from humanizer_bench.registry import ATTACKS
+
+    assert ATTACKS["back_translation"] is BackTranslationAttack
+    attack = BackTranslationAttack()
+    assert attack.name == "back_translation"
+    assert attack.pivot == "fr"
+
+
+def test_back_translation_empty_passthrough():
+    # Blank input short-circuits before any model is touched.
+    assert BackTranslationAttack().transform("   ") == "   "
+
+
+@pytest.mark.models
+def test_back_translation_returns_str():
+    attack = BackTranslationAttack()
+    out = attack.transform("The quick brown fox jumps over the lazy dog.")
+    assert isinstance(out, str)
+    assert out.strip()
+
+
+@pytest.mark.models
+def test_back_translation_round_trip_changes_text():
+    # Complex phrasing gets paraphrased; very simple sentences can round-trip
+    # intact, so this uses one with enough idiom to shift.
+    text = (
+        "The committee convened to deliberate on the ramifications "
+        "of the proposed legislation."
+    )
+    assert BackTranslationAttack().transform(text) != text
+
+
+@pytest.mark.models
+def test_back_translation_deterministic():
+    text = "The quick brown fox jumps over the lazy dog."
+    first = BackTranslationAttack().transform(text)
+    second = BackTranslationAttack().transform(text)
+    assert first == second
