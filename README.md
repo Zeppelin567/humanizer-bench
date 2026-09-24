@@ -35,7 +35,7 @@ dataset) is just writing one small subclass:
 | Part | Base class | Ships now | Coming (Phase 2) |
 |------|-----------|-----------|------------------|
 | Detector | `BaseDetector` | `HeuristicDetector` (burstiness baseline), `PerplexityDetector` (GPT-2 perplexity) | Binoculars, Fast-DetectGPT |
-| Attack   | `BaseAttack`   | `SentenceMergeAttack`, `NoiseAttack`   | back-translation, synonym substitution |
+| Attack   | `BaseAttack`   | `SentenceMergeAttack`, `NoiseAttack`, `BackTranslationAttack` (MarianMT EN→pivot→EN round-trip) | synonym substitution |
 | Dataset  | `BaseDataset`  | `ToyDataset` (bundled, offline)        | RAID, human control, non-native English |
 | Metrics  | —              | accuracy, false-positive rate          | ROC-AUC, P/R/F1, bootstrap CIs |
 
@@ -135,8 +135,10 @@ for the workflow.
 - [x] Initial test suite
 - [x] GPT-2 perplexity detector
 - [ ] Binoculars / Fast-DetectGPT wrappers
-- [ ] Back-translation and synonym-substitution attacks
-- [ ] Real dataset loaders (RAID + non-native-English corpus)
+- [x] Back-translation attack (MarianMT)
+- [ ] Synonym-substitution attack
+- [x] Real dataset loaders (HuggingFace: AI + human corpora)
+- [ ] RAID + non-native-English corpus
 - [ ] ROC-AUC, P/R/F1, bootstrap confidence intervals
 - [x] CLI with detector × attack matrix evaluation
 - [x] GitHub Actions CI
