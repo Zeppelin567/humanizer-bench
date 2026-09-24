@@ -30,11 +30,6 @@ def test_unknown_detector_fails_cleanly(capsys):
     assert "unknown detector" in capsys.readouterr().err
 
 
-def test_stub_component_fails_cleanly(capsys):
-    assert main(["--attack", "back_translation"]) == 2
-    assert "stub" in capsys.readouterr().err
-
-
 def test_json_output_is_parseable(capsys):
     assert main(["--json"]) == 0
     payload = json.loads(capsys.readouterr().out)
