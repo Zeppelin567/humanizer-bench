@@ -113,3 +113,20 @@ def test_back_translation_deterministic():
     first = BackTranslationAttack().transform(text)
     second = BackTranslationAttack().transform(text)
     assert first == second
+
+
+@pytest.mark.models
+def test_back_translation_preserves_sentence_count():
+    # Regression test: opus-mt is a sentence-level model, so feeding a whole
+    # paragraph at once let greedy decoding emit EOS early and silently drop
+    # trailing sentences. transform() now round-trips sentence by sentence.
+    from humanizer_bench.attacks.back_translation import _split_sentences
+
+    text = (
+        "The committee convened to deliberate on the ramifications "
+        "of the proposed legislation. "
+        "These capabilities continue to expand across many industries. "
+        "Addressing this issue requires coordinated international action."
+    )
+    out = BackTranslationAttack().transform(text)
+    assert len(_split_sentences(out)) == len(_split_sentences(text)) == 3

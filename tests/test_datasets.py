@@ -2,7 +2,7 @@
 
 import pytest
 
-from humanizer_bench.datasets import Example, HFDataset, ToyDataset
+from humanizer_bench.datasets import Example, HFDataset, HFMixedDataset, ToyDataset
 from humanizer_bench.datasets.loaders import load_hf_dataset
 
 
@@ -51,6 +51,13 @@ def test_hf_dataset_invalid_label_raises():
 def test_hf_dataset_invalid_limit_raises():
     with pytest.raises(ValueError):
         HFDataset("ag_news", limit=-1)
+
+
+def test_hf_mixed_dataset_constructs_without_downloading():
+    # No Hub access until iterated: construction must stay cheap.
+    ds = HFMixedDataset()
+    assert ds.name == "hf"
+    assert isinstance(ds, HFMixedDataset)
 
 
 @pytest.mark.models

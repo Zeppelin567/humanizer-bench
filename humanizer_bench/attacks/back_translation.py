@@ -12,8 +12,22 @@ the instance, per the model-backed component conventions in CONTRIBUTING.md.
 
 from __future__ import annotations
 
+import re
+
 from .._deps import require
 from .base import BaseAttack
+
+
+# Split on sentence-ending punctuation followed by whitespace. opus-mt models
+# are trained on single sentences: feeding a whole paragraph lets greedy
+# decoding emit EOS early and silently drop trailing sentences, so the attack
+# round-trips sentence by sentence and reassembles in order.
+_SENTENCE_END_RE = re.compile(r"(?<=[.!?])\s+")
+
+
+def _split_sentences(text: str) -> list[str]:
+    """Split ``text`` into sentences on ``.``/``!``/``?`` boundaries."""
+    return [s for s in _SENTENCE_END_RE.split(text.strip()) if s]
 
 
 class BackTranslationAttack(BaseAttack):
@@ -79,12 +93,22 @@ class BackTranslationAttack(BaseAttack):
             )
         return tokenizer.decode(generated[0], skip_special_tokens=True)
 
-    def transform(self, text: str) -> str:
-        """Return the EN -> pivot -> EN paraphrase of ``text``."""
-        if not text.strip():
-            return text
-        self._load()
+    def _round_trip(self, text: str) -> str:
+        """Translate one sentence ``text`` EN -> pivot -> EN."""
         forward_tokenizer, forward_model = self._forward
         backward_tokenizer, backward_model = self._backward
         pivoted = self._translate(text, forward_tokenizer, forward_model)
         return self._translate(pivoted, backward_tokenizer, backward_model)
+
+    def transform(self, text: str) -> str:
+        """Return the EN -> pivot -> EN paraphrase of ``text``.
+
+        The text is split into sentences first: opus-mt is a sentence-level
+        model, and greedy-decoding a whole paragraph can emit EOS early and
+        drop trailing sentences. Each sentence is round-tripped independently
+        and the results are reassembled in the original order.
+        """
+        if not text.strip():
+            return text
+        self._load()
+        return " ".join(self._round_trip(s) for s in _split_sentences(text))

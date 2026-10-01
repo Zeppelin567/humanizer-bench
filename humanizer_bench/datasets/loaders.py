@@ -150,3 +150,23 @@ def load_hf_dataset(
             ),
         ]
     )
+
+
+class HFMixedDataset(BaseDataset):
+    """HuggingFace benchmark set: one AI corpus + one human corpus.
+
+    Zero-argument construction so it can live in the component registry --
+    ``humanizer-bench --dataset hf`` resolves to this. The corpora are
+    :func:`load_hf_dataset`'s defaults (GPT-3-generated Alpaca instructions
+    as the AI class, human-written AG News as the human class); call
+    :func:`load_hf_dataset` directly for custom corpora or per-corpus limits.
+    Construction stays cheap: nothing is downloaded until first iteration.
+    """
+
+    name = "hf"
+
+    def __init__(self) -> None:
+        self._inner = load_hf_dataset()
+
+    def __iter__(self) -> Iterator[Example]:
+        return iter(self._inner)

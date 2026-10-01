@@ -11,7 +11,7 @@ from __future__ import annotations
 from typing import Dict, Type
 
 from .attacks import BackTranslationAttack, BaseAttack, NoiseAttack, SentenceMergeAttack
-from .datasets import BaseDataset, ToyDataset
+from .datasets import BaseDataset, HFMixedDataset, ToyDataset
 from .detectors import BaseDetector, HeuristicDetector, PerplexityDetector
 
 DETECTORS: Dict[str, Type[BaseDetector]] = {
@@ -27,6 +27,9 @@ ATTACKS: Dict[str, Type[BaseAttack]] = {
 
 DATASETS: Dict[str, Type[BaseDataset]] = {
     ToyDataset.name: ToyDataset,
+    # "hf" is the mixed AI+human benchmark set (HFMixedDataset); the
+    # single-corpus HFDataset stays unregistered -- it needs an hf_name.
+    HFMixedDataset.name: HFMixedDataset,
 }
 
 
