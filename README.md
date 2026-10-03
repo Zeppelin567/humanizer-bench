@@ -36,7 +36,7 @@ dataset) is just writing one small subclass:
 |------|-----------|-----------|------------------|
 | Detector | `BaseDetector` | `HeuristicDetector` (burstiness baseline), `PerplexityDetector` (GPT-2 perplexity) | Binoculars, Fast-DetectGPT |
 | Attack   | `BaseAttack`   | `SentenceMergeAttack`, `NoiseAttack`, `BackTranslationAttack` (MarianMT EN→pivot→EN round-trip) | synonym substitution |
-| Dataset  | `BaseDataset`  | `ToyDataset` (bundled, offline)        | RAID, human control, non-native English |
+| Dataset  | `BaseDataset`  | `ToyDataset` (bundled, offline), HuggingFace loaders (`--dataset hf`) | RAID, non-native English |
 | Metrics  | —              | accuracy, false-positive rate          | ROC-AUC, P/R/F1, bootstrap CIs |
 
 > The default pairing (`HeuristicDetector` × `SentenceMergeAttack`) is chosen so the
