@@ -155,18 +155,27 @@ def load_hf_dataset(
 class HFMixedDataset(BaseDataset):
     """HuggingFace benchmark set: one AI corpus + one human corpus.
 
-    Zero-argument construction so it can live in the component registry --
+    Constructible with no arguments so it can live in the component registry --
     ``humanizer-bench --dataset hf`` resolves to this. The corpora are
     :func:`load_hf_dataset`'s defaults (GPT-3-generated Alpaca instructions
     as the AI class, human-written AG News as the human class); call
-    :func:`load_hf_dataset` directly for custom corpora or per-corpus limits.
-    Construction stays cheap: nothing is downloaded until first iteration.
+    :func:`load_hf_dataset` directly for custom corpora.
+
+    Construction stays cheap -- nothing is downloaded until first iteration --
+    but *iteration* is not: the two corpora hold 172k rows between them, and a
+    detector pass is ~31 ms/text (back-translation ~1.1 s/text), so an uncapped
+    run takes hours. Hence the small default ``limit``; raise it deliberately.
+
+    Args:
+        limit: Maximum examples per corpus. The default of 50 yields 100
+            examples: roughly 12 s for a detector-only matrix, 70 s including
+            back-translation.
     """
 
     name = "hf"
 
-    def __init__(self) -> None:
-        self._inner = load_hf_dataset()
+    def __init__(self, limit: int = 50) -> None:
+        self._inner = load_hf_dataset(limit=limit)
 
     def __iter__(self) -> Iterator[Example]:
         return iter(self._inner)
