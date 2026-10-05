@@ -3,8 +3,7 @@
 Short names (each class's ``name`` attribute) map to component classes so the
 CLI — and anything else — can construct components from strings. When you add a
 new detector, attack, or dataset, register it here so ``humanizer-bench --list``
-can find it. Phase 2 stubs are listed too; they raise ``NotImplementedError``
-with pointers when used.
+can find it.
 """
 
 from __future__ import annotations
@@ -12,22 +11,25 @@ from __future__ import annotations
 from typing import Dict, Type
 
 from .attacks import BackTranslationAttack, BaseAttack, NoiseAttack, SentenceMergeAttack
-from .datasets import BaseDataset, ToyDataset
+from .datasets import BaseDataset, HFMixedDataset, ToyDataset
 from .detectors import BaseDetector, HeuristicDetector, PerplexityDetector
 
 DETECTORS: Dict[str, Type[BaseDetector]] = {
     HeuristicDetector.name: HeuristicDetector,
-    PerplexityDetector.name: PerplexityDetector,  # Phase 2 stub
+    PerplexityDetector.name: PerplexityDetector,
 }
 
 ATTACKS: Dict[str, Type[BaseAttack]] = {
     SentenceMergeAttack.name: SentenceMergeAttack,
     NoiseAttack.name: NoiseAttack,
-    BackTranslationAttack.name: BackTranslationAttack,  # Phase 2 stub
+    BackTranslationAttack.name: BackTranslationAttack,
 }
 
 DATASETS: Dict[str, Type[BaseDataset]] = {
     ToyDataset.name: ToyDataset,
+    # "hf" is the mixed AI+human benchmark set (HFMixedDataset); the
+    # single-corpus HFDataset stays unregistered -- it needs an hf_name.
+    HFMixedDataset.name: HFMixedDataset,
 }
 
 

@@ -12,12 +12,20 @@ from humanizer_bench.registry import (
     get_dataset,
     get_detector,
 )
+from humanizer_bench.datasets import HFMixedDataset
 
 
 def test_get_known_components():
     assert isinstance(get_detector("heuristic"), HeuristicDetector)
     assert isinstance(get_attack("sentence_merge"), SentenceMergeAttack)
     assert get_dataset("toy").name == "toy"
+
+
+def test_get_hf_dataset_from_registry():
+    # --dataset hf resolves to the mixed AI+human benchmark set.
+    ds = get_dataset("hf")
+    assert isinstance(ds, HFMixedDataset)
+    assert ds.name == "hf"
 
 
 def test_unknown_name_lists_available():

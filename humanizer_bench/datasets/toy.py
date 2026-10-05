@@ -12,9 +12,8 @@ from .base import BaseDataset, Example
 class ToyDataset(BaseDataset):
     """A handful of short human/AI snippets shipped inside the package.
 
-    For demonstration and tests only. Real corpora (RAID, non-native-English
-    writing, etc.) are loaded via :mod:`humanizer_bench.datasets.loaders` in
-    Phase 2.
+    For demonstration and tests only. Real corpora are loaded via
+    :mod:`humanizer_bench.datasets.loaders`.
     """
 
     name = "toy"
