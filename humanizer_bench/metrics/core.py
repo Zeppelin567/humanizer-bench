@@ -2,10 +2,13 @@
 
 Phase 1 ships the essentials needed by the minimal loop. Phase 2 adds ROC-AUC,
 precision/recall/F1, and bootstrap confidence intervals on every metric.
+Phase 3 adds FPR-at-fixed-TPR, the operating-point metric for the project's
+false-positive-rate focus.
 
 Convention: label ``1`` is the positive class (AI-written text), label ``0``
 is the negative class (human-written text). All label-based metrics treat
-``y_pred`` as hard labels; :func:`roc_auc` takes raw scores instead.
+``y_pred`` as hard labels; :func:`roc_auc` and :func:`fpr_at_tpr` take raw
+scores instead.
 """
 
 from __future__ import annotations
@@ -117,6 +120,65 @@ def roc_auc(y_true: Sequence[int], y_scores: Sequence[float]) -> float:
                 rank_sum += avg_rank
         i = j
     return (rank_sum - n_pos * (n_pos + 1) / 2.0) / (n_pos * n_neg)
+
+
+def fpr_at_tpr(
+    y_true: Sequence[int], y_scores: Sequence[float], *, tpr: float = 0.95
+) -> float:
+    """False positive rate at a fixed true positive rate (recall).
+
+    Answers: "to catch ``tpr`` of the AI texts, what fraction of human texts
+    would we falsely flag?" Lower is better. This is the operating-point
+    metric behind the project's headline concern (see
+    :func:`false_positive_rate`): full :func:`roc_auc` averages over
+    threshold regions no deployment would ever use, while this pins the
+    comparison at a high-recall operating point.
+
+    Computed from the ROC curve: thresholds sweep the distinct scores from
+    high to low (tied scores move as one group, since no threshold can split
+    them), and the FPR is linearly interpolated between the two ROC points
+    straddling ``tpr``. Compatible with :func:`bootstrap_ci` (the ``tpr``
+    keyword keeps its default there). Returns ``0.0`` when there is nothing
+    to rank (no positives or no negatives, or an empty input).
+
+    Raises:
+        ValueError: If ``y_true`` contains labels other than 0 and 1, or if
+            ``tpr`` is not strictly between 0 and 1.
+    """
+    labels = {int(t) for t in y_true}
+    if not labels.issubset({0, 1}):
+        raise ValueError(f"y_true must contain only 0/1 labels, got {sorted(labels)}")
+    if not 0.0 < tpr < 1.0:
+        raise ValueError(f"tpr must be strictly between 0 and 1, got {tpr!r}")
+    pairs = [(float(s), int(t)) for s, t in zip(y_scores, y_true)]
+    n_pos = sum(1 for _, t in pairs if t == 1)
+    n_neg = len(pairs) - n_pos
+    if n_pos == 0 or n_neg == 0:
+        return 0.0
+    # ROC points, one per distinct threshold: (fpr, tpr), starting at (0, 0).
+    ordered = sorted(pairs, key=lambda pair: pair[0], reverse=True)
+    points = [(0.0, 0.0)]
+    tp = fp = 0
+    i = 0
+    n = len(ordered)
+    while i < n:
+        j = i
+        while j < n and ordered[j][0] == ordered[i][0]:
+            j += 1
+        for k in range(i, j):
+            if ordered[k][1] == 1:
+                tp += 1
+            else:
+                fp += 1
+        points.append((fp / n_neg, tp / n_pos))
+        i = j
+    # First point with tpr >= target; the previous point is strictly below it
+    # (tpr starts at 0 and only moves up), so the division is safe.
+    idx = next(k for k, (_, t) in enumerate(points) if t >= tpr)
+    fpr_lo, tpr_lo = points[idx - 1]
+    fpr_hi, tpr_hi = points[idx]
+    frac = (tpr - tpr_lo) / (tpr_hi - tpr_lo)
+    return fpr_lo + frac * (fpr_hi - fpr_lo)
 
 
 def bootstrap_ci(

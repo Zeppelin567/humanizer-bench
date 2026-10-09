@@ -7,6 +7,7 @@ from humanizer_bench.metrics import (
     bootstrap_ci,
     f1_score,
     false_positive_rate,
+    fpr_at_tpr,
     precision,
     recall,
     roc_auc,
@@ -154,3 +155,46 @@ def test_bootstrap_ci_rejects_invalid_ci():
         bootstrap_ci(accuracy, y_true, y_pred, n_bootstrap=100, ci=0.0, seed=0)
     with pytest.raises(ValueError, match="between 0.0 and 1.0"):
         bootstrap_ci(accuracy, y_true, y_pred, n_bootstrap=100, ci=1.5, seed=0)
+
+
+def test_fpr_at_tpr_perfect_separation():
+    # Every positive scores above every negative: catching 95% of AI texts
+    # flags no human text.
+    assert fpr_at_tpr([0, 0, 1, 1], [0.1, 0.2, 0.8, 0.9]) == 0.0
+
+
+def test_fpr_at_tpr_worst_separation():
+    # Inverted ranking: to catch 95% of AI texts every human text is flagged.
+    assert fpr_at_tpr([0, 0, 1, 1], [0.9, 0.8, 0.2, 0.1]) == 1.0
+
+
+def test_fpr_at_tpr_interpolates_and_groups_ties():
+    # Sorted desc: 0.9(pos), then a tie group 0.5(pos)+0.5(neg).
+    # ROC points: (0,0) -> (0,0.5) -> (1.0,1.0). At TPR=0.95 the straddling
+    # segment interpolates to FPR = 0.9. A per-sample walk would wrongly cut
+    # the tie group and report 0.0 -- no threshold can split tied scores.
+    assert fpr_at_tpr([0, 1, 1], [0.5, 0.5, 0.9]) == pytest.approx(0.9)
+
+
+def test_fpr_at_tpr_custom_tpr():
+    # Sorted desc: 0.9(neg), 0.8(pos), 0.4(neg), 0.3(pos).
+    # ROC points: (0,0) -> (0.5,0) -> (0.5,0.5) -> (1.0,0.5) -> (1.0,1.0).
+    # At TPR=0.5 the curve passes exactly through (0.5, 0.5).
+    assert fpr_at_tpr([0, 0, 1, 1], [0.9, 0.4, 0.8, 0.3], tpr=0.5) == 0.5
+
+
+def test_fpr_at_tpr_degenerate_inputs():
+    assert fpr_at_tpr([1, 1], [0.2, 0.8]) == 0.0  # no negatives
+    assert fpr_at_tpr([0, 0], [0.2, 0.8]) == 0.0  # no positives
+    assert fpr_at_tpr([], []) == 0.0  # empty
+
+
+def test_fpr_at_tpr_rejects_non_binary_labels():
+    with pytest.raises(ValueError, match="only 0/1 labels"):
+        fpr_at_tpr([0, 2, 1], [0.1, 0.9, 0.5])
+
+
+def test_fpr_at_tpr_rejects_bad_tpr():
+    for bad in (0.0, 1.0, 1.5, -0.1):
+        with pytest.raises(ValueError, match="strictly between"):
+            fpr_at_tpr([0, 1], [0.2, 0.8], tpr=bad)
